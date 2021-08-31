@@ -9,7 +9,7 @@ export default function App() {
     z: 0,
   });
   const [subscription, setSubscription] = useState<any>();
-  const [updateInterval, setUpdateInterval] = useState<number>(16);
+  const [updateIntervalMilliseconds, setUpdateInterval] = useState<number>(1000);
 
   const _slow = () => {
     setUpdateInterval(1000)
@@ -20,8 +20,8 @@ export default function App() {
   };
 
   useEffect(() => {
-    Accelerometer.setUpdateInterval(updateInterval);
-  }, [updateInterval]);
+    Accelerometer.setUpdateInterval(updateIntervalMilliseconds);
+  }, [updateIntervalMilliseconds]);
 
   let measuredData: Array<number[]> = [];
   const _subscribe = () => {
@@ -33,6 +33,12 @@ export default function App() {
         if (measuredData.length > 10) {
           measuredData = measuredData.slice(1);
         }
+
+        // Velocidades
+        const vx = integrate(measuredData.map(e => e[0]), updateIntervalMilliseconds / 1000);
+        const vy = integrate(measuredData.map(e => e[1]), updateIntervalMilliseconds / 1000);
+        const vz = integrate(measuredData.map(e => e[2]), updateIntervalMilliseconds / 1000);
+
         // console.log(measuredData)
       })
     );
@@ -75,6 +81,11 @@ function round(n: number | null | undefined) {
     return 0;
   }
   return Math.floor(n * 100) / 100;
+}
+
+function integrate(array: number[], interval: number) {
+  const delta = array.map((v, i, a) => v - (a[i - 1] || 0))
+  return delta.map(value => value / interval).slice(1);
 }
 
 const styles = StyleSheet.create({
