@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
-import Speedometer from './src/Services/Velocimeter';
-import MathUtils from './src/Services/MathUtils';
 
 export default function App() {
-  const [acceleration, setAcceleration] = useState({
+  const [acceleration, setData] = useState({
     x: 0,
     y: 0,
     z: 0,
@@ -16,11 +14,11 @@ export default function App() {
     z: 0,
   });
   const [subscription, setSubscription] = useState<any>();
-  const [updateIntervalMilliseconds, setUpdateInterval] = useState<number>(100);
+  const [updateIntervalMilliseconds, setUpdateInterval] = useState<number>(1000);
   const [speed, setSpeed] = useState<number>(0);
 
   const _slow = () => {
-    setUpdateInterval(500)
+    setUpdateInterval(1000)
   };
 
   const _fast = () => {
@@ -29,16 +27,60 @@ export default function App() {
 
   useEffect(() => {
     Accelerometer.setUpdateInterval(updateIntervalMilliseconds);
-    Speedometer.setUpdateInterval(updateIntervalMilliseconds);
   }, [updateIntervalMilliseconds]);
 
+  let measuredData: Array<number[]> = [];
   const _subscribe = () => {
     setSubscription(
       Accelerometer.addListener(accelerometerData => {
-        const { acceleration, speed, velocity } = Speedometer.getVelocityFromAccelerometerData(accelerometerData);
-        setAcceleration(acceleration);
-        setSpeed(speed);
-        setVelocity(velocity);
+        const G = 9.81; // m/s^2
+
+        // Object data from accelerometer (G)
+        // console.log(accelerometerData);
+        const { x, y, z } = accelerometerData;
+
+        // Extract values and convert to m/s^2
+        const acc = [x, y, z].map(component => component * G);
+
+        // Append to array of values
+        measuredData.push(acc);
+        if (measuredData.length >= 10) {
+          measuredData = measuredData.slice(1);
+        }
+        const axArray = (measuredData.map(e => e[0]));
+        const ayArray = (measuredData.map(e => e[1]));
+        const azArray = (measuredData.map(e => e[2]));
+
+        const axMean = arrayMean(axArray);
+        const ayMean = arrayMean(ayArray);
+        const azMean = arrayMean(azArray);
+
+        setData({
+          x: axMean,
+          y: ayMean,
+          z: azMean,
+        });
+
+        // Velocidades
+        const vxArray = integrate(axArray, updateIntervalMilliseconds / 1000);
+        const vyArray = integrate(ayArray, updateIntervalMilliseconds / 1000);
+        const vzArray = integrate(azArray, updateIntervalMilliseconds / 1000);
+
+        const vxMean = arrayMean(vxArray);
+        const vyMean = arrayMean(vyArray);
+        const vzMean = arrayMean(vzArray);
+
+        const vx = vxMean;
+        const vy = vyMean;
+        const vz = vzMean;
+
+        const normV = norm([vx, vy, vz]);
+        setSpeed(normV);
+        setVelocity({
+          x: vx,
+          y: vy,
+          z: vz,
+        });
       })
     );
   };
@@ -52,8 +94,6 @@ export default function App() {
     _subscribe();
     return () => _unsubscribe();
   }, []);
-
-  const round = MathUtils.round;
 
   return (
     <View style={styles.container}>
@@ -82,6 +122,37 @@ export default function App() {
   );
 }
 
+function round(n: number | null | undefined) {
+  if (!n) {
+    return 0;
+  }
+  return Math.round(n * 100) / 100;
+}
+
+function integrate(array: number[], interval: number) {
+  const delta = array.map((v, i, a) => v - (a[i - 1] || 0))
+  return delta.map(value => value / interval).slice(1);
+}
+
+function arraySum(array: number[]) {
+  return array.reduce((a, b) => a + b, 0);
+}
+
+function arrayMean(array: number[]) {
+  return arraySum(array) / (array.length);
+}
+
+function dot(array1: number[], array2: number[]) {
+  let dot = 0;
+  for (let i = 0; i < array1.length; i++) {
+    dot += array1[i] * array2[i];
+  }
+  return dot;
+}
+
+function norm(array: number[]) {
+  return Math.sqrt(dot(array, array));
+}
 
 const styles = StyleSheet.create({
   container: {
