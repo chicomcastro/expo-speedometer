@@ -3,7 +3,12 @@ import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 
 export default function App() {
-  const [data, setData] = useState({
+  const [acceleration, setData] = useState({
+    x: 0,
+    y: 0,
+    z: 0,
+  });
+  const [velocity, setVelocity] = useState({
     x: 0,
     y: 0,
     z: 0,
@@ -38,7 +43,7 @@ export default function App() {
         const vx = integrate(measuredData.map(e => e[0]), updateIntervalMilliseconds / 1000);
         const vy = integrate(measuredData.map(e => e[1]), updateIntervalMilliseconds / 1000);
         const vz = integrate(measuredData.map(e => e[2]), updateIntervalMilliseconds / 1000);
-
+        setVelocity({ x: vx[0], y: vy[0], z: vz[0] });
         // console.log(measuredData)
       })
     );
@@ -54,12 +59,14 @@ export default function App() {
     return () => _unsubscribe();
   }, []);
 
-  const { x, y, z } = data;
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Accelerometer: (in Gs where 1 G = 9.81 m s^-2)</Text>
       <Text style={styles.text}>
-        x: {round(x)} y: {round(y)} z: {round(z)}
+        ax: {round(acceleration.x)} ay: {round(acceleration.y)} az: {round(acceleration.z)}
+      </Text>
+      <Text style={styles.text}>
+        vx: {round(velocity.x)} vy: {round(velocity.y)} vz: {round(velocity.z)}
       </Text>
       <View style={styles.buttonContainer}>
         <TouchableOpacity onPress={subscription ? _unsubscribe : _subscribe} style={styles.button}>
