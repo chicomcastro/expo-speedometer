@@ -15,6 +15,7 @@ export default function App() {
   });
   const [subscription, setSubscription] = useState<any>();
   const [updateIntervalMilliseconds, setUpdateInterval] = useState<number>(1000);
+  const [meanVelocity, setMeanVelocity] = useState<number>(0);
 
   const _slow = () => {
     setUpdateInterval(1000)
@@ -43,8 +44,15 @@ export default function App() {
         const vx = integrate(measuredData.map(e => e[0]), updateIntervalMilliseconds / 1000);
         const vy = integrate(measuredData.map(e => e[1]), updateIntervalMilliseconds / 1000);
         const vz = integrate(measuredData.map(e => e[2]), updateIntervalMilliseconds / 1000);
-        setVelocity({ x: vx[0], y: vy[0], z: vz[0] });
-        // console.log(measuredData)
+
+        const v = []
+        for (let i = 0; i < vx.length; i++) {
+          v.push([vx[i], vy[i], vz[i]]);
+        }
+        const normV = v.map(norm);
+        setMeanVelocity(arraySum(normV));
+        const [x, y, z] = v[v.length - 1] || [];
+        setVelocity({ x, y, z });
       })
     );
   };
@@ -67,6 +75,9 @@ export default function App() {
       </Text>
       <Text style={styles.text}>
         vx: {round(velocity.x)} vy: {round(velocity.y)} vz: {round(velocity.z)}
+      </Text>
+      <Text style={styles.text}>
+        Speed: {round(meanVelocity)} m/s
       </Text>
       <View style={styles.buttonContainer}>
         <TouchableOpacity onPress={subscription ? _unsubscribe : _subscribe} style={styles.button}>
@@ -93,6 +104,22 @@ function round(n: number | null | undefined) {
 function integrate(array: number[], interval: number) {
   const delta = array.map((v, i, a) => v - (a[i - 1] || 0))
   return delta.map(value => value / interval).slice(1);
+}
+
+function arraySum(array: number[]) {
+  return array.reduce((a, b) => a + b, 0);
+}
+
+function dot(array1: number[], array2: number[]) {
+  let dot = 0;
+  for (let i = 0; i < array1.length; i++) {
+    dot += array1[i] * array2[i];
+  }
+  return dot;
+}
+
+function norm(array: number[]) {
+  return Math.sqrt(dot(array, array));
 }
 
 const styles = StyleSheet.create({
