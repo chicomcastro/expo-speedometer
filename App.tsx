@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
-import Speedometer from './src/Services/Velocimeter';
+import Speedometer from './src/Services/Speedometer';
 import MathUtils from './src/Services/MathUtils';
 
 export default function App() {
+  const [accData, setAccData] = useState({
+    x: 0,
+    y: 0,
+    z: 0,
+  });
   const [acceleration, setAcceleration] = useState({
     x: 0,
     y: 0,
@@ -36,6 +41,7 @@ export default function App() {
     setSubscription(
       Accelerometer.addListener(accelerometerData => {
         const { acceleration, speed, velocity } = Speedometer.getVelocityFromAccelerometerData(accelerometerData);
+        setAccData(accelerometerData);
         setAcceleration(acceleration);
         setSpeed(speed);
         setVelocity(velocity);
@@ -59,12 +65,16 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.text}>Accelerometer: (in Gs where 1 G = 9.81 m s^-2)</Text>
       <Text style={styles.text}>
+        ax: {round(accData.x)} ay: {round(accData.y)} az: {round(accData.z)}
+      </Text>
+      <Text style={{ ...styles.text, marginTop: 32 }}>Acceleration and velocity (m s^-2) on device referential</Text>
+      <Text style={styles.text}>
         ax: {round(acceleration.x)} ay: {round(acceleration.y)} az: {round(acceleration.z)}
       </Text>
       <Text style={styles.text}>
         vx: {round(velocity.x)} vy: {round(velocity.y)} vz: {round(velocity.z)}
       </Text>
-      <Text style={styles.text}>
+      <Text style={{ ...styles.text, marginBottom: 32 }}>
         Speed: {round(speed)} m/s - {round(speed / 3.6)} km/h
       </Text>
       <View style={styles.buttonContainer}>
