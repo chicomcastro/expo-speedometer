@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
+import Speedometer from './src/Services/Velocimeter';
+import MathUtils from './src/Services/MathUtils';
 
 export default function App() {
-  const [acceleration, setData] = useState({
+  const [acceleration, setAcceleration] = useState({
     x: 0,
     y: 0,
     z: 0,
@@ -14,11 +16,11 @@ export default function App() {
     z: 0,
   });
   const [subscription, setSubscription] = useState<any>();
-  const [updateIntervalMilliseconds, setUpdateInterval] = useState<number>(1000);
-  const [meanVelocity, setMeanVelocity] = useState<number>(0);
+  const [updateIntervalMilliseconds, setUpdateInterval] = useState<number>(100);
+  const [speed, setSpeed] = useState<number>(0);
 
   const _slow = () => {
-    setUpdateInterval(1000)
+    setUpdateInterval(500)
   };
 
   const _fast = () => {
@@ -27,32 +29,16 @@ export default function App() {
 
   useEffect(() => {
     Accelerometer.setUpdateInterval(updateIntervalMilliseconds);
+    Speedometer.setUpdateInterval(updateIntervalMilliseconds);
   }, [updateIntervalMilliseconds]);
 
-  let measuredData: Array<number[]> = [];
   const _subscribe = () => {
     setSubscription(
       Accelerometer.addListener(accelerometerData => {
-        setData(accelerometerData);
-        const acc = Object.values(accelerometerData);
-        measuredData.push(acc);
-        if (measuredData.length > 10) {
-          measuredData = measuredData.slice(1);
-        }
-
-        // Velocidades
-        const vx = integrate(measuredData.map(e => e[0]), updateIntervalMilliseconds / 1000);
-        const vy = integrate(measuredData.map(e => e[1]), updateIntervalMilliseconds / 1000);
-        const vz = integrate(measuredData.map(e => e[2]), updateIntervalMilliseconds / 1000);
-
-        const v = []
-        for (let i = 0; i < vx.length; i++) {
-          v.push([vx[i], vy[i], vz[i]]);
-        }
-        const normV = v.map(norm);
-        setMeanVelocity(arraySum(normV));
-        const [x, y, z] = v[v.length - 1] || [];
-        setVelocity({ x, y, z });
+        const { acceleration, speed, velocity } = Speedometer.getVelocityFromAccelerometerData(accelerometerData);
+        setAcceleration(acceleration);
+        setSpeed(speed);
+        setVelocity(velocity);
       })
     );
   };
@@ -67,6 +53,8 @@ export default function App() {
     return () => _unsubscribe();
   }, []);
 
+  const round = MathUtils.round;
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Accelerometer: (in Gs where 1 G = 9.81 m s^-2)</Text>
@@ -77,7 +65,7 @@ export default function App() {
         vx: {round(velocity.x)} vy: {round(velocity.y)} vz: {round(velocity.z)}
       </Text>
       <Text style={styles.text}>
-        Speed: {round(meanVelocity)} m/s
+        Speed: {round(speed)} m/s - {round(speed / 3.6)} km/h
       </Text>
       <View style={styles.buttonContainer}>
         <TouchableOpacity onPress={subscription ? _unsubscribe : _subscribe} style={styles.button}>
@@ -94,33 +82,6 @@ export default function App() {
   );
 }
 
-function round(n: number | null | undefined) {
-  if (!n) {
-    return 0;
-  }
-  return Math.floor(n * 100) / 100;
-}
-
-function integrate(array: number[], interval: number) {
-  const delta = array.map((v, i, a) => v - (a[i - 1] || 0))
-  return delta.map(value => value / interval).slice(1);
-}
-
-function arraySum(array: number[]) {
-  return array.reduce((a, b) => a + b, 0);
-}
-
-function dot(array1: number[], array2: number[]) {
-  let dot = 0;
-  for (let i = 0; i < array1.length; i++) {
-    dot += array1[i] * array2[i];
-  }
-  return dot;
-}
-
-function norm(array: number[]) {
-  return Math.sqrt(dot(array, array));
-}
 
 const styles = StyleSheet.create({
   container: {
