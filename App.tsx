@@ -14,11 +14,11 @@ export default function App() {
     z: 0,
   });
   const [subscription, setSubscription] = useState<any>();
-  const [updateIntervalMilliseconds, setUpdateInterval] = useState<number>(1000);
+  const [updateIntervalMilliseconds, setUpdateInterval] = useState<number>(100);
   const [speed, setSpeed] = useState<number>(0);
 
   const _slow = () => {
-    setUpdateInterval(1000)
+    setUpdateInterval(200)
   };
 
   const _fast = () => {
