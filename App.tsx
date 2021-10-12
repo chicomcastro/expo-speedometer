@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
-import Speedometer from './src/Services/Speedometer';
-import MathUtils from './src/Services/MathUtils';
+import Speedometer from 'speedometer';
 
 export default function App() {
   const [accData, setAccData] = useState({
@@ -59,7 +58,12 @@ export default function App() {
     return () => _unsubscribe();
   }, []);
 
-  const round = MathUtils.round;
+  const round = (n: number | null | undefined) => {
+    if (!n) {
+      return 0;
+    }
+    return Math.round(n * 100) / 100;
+  }
 
   return (
     <View style={styles.container}>
