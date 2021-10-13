@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
-import Speedometer from 'speedometer';
+import Speedometer from 'speedometer-from-accelerometer';
 
 export default function App() {
   const [accData, setAccData] = useState({
